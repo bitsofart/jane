@@ -1,0 +1,11 @@
+{
+   "compileOnSave": true,
+   "compilerOptions": {
+     "noImplicitAny" : true,
+     "allowSyntheticDefaultImports": true,
+     "downlevelIteration": true,
+     "module": "CommonJS",
+     "esModuleInterop": true,
+     "outDir": "dist"
+   }
+}
