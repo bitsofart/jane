@@ -11,7 +11,7 @@ export function init(): Octokit {
 
 export function getGhClient(): Octokit {
   if (!client) {
-    throw new Error('The client was not initialized yet.')
+    return init()
   }
   return client
 }

@@ -12,3 +12,4 @@ export const config = {
 
 export const repo = 'contest' || process.env.JANE_REPO_NAME
 export const owner = 'bitsofart' || process.env.JANE_REPO_OWNER
+export const vercel_project_id = 'bitsofart' || process.env.VERCEL_PROJECT_ID

@@ -1,14 +1,17 @@
 import axios from 'axios'
 import crypto from 'crypto'
-import { GithubFile } from './types'
+import { vercel_project_id } from './config'
+import { GithubFile, GithubContentFile } from './types'
 
 const fileUploadEndpoint = 'https://api.vercel.com/v2/now/files'
-const deployEndpoint = 'https://api.vercel.com/v12/now/deployments'
+const deployEndpoint = 'https://api.vercel.com/v12/now/deployments?forceNew=1'
 const vercelToken = process.env.VERCEL_TOKEN
 
-async function uploadFile(file: GithubFile): Promise<[string, string, number]> {
-  const { data: fileContent } = await axios.get<string>(file.raw_url)
-  const fileSha1 = crypto.createHash('sha1').update(fileContent, 'utf8').digest().toString('utf8')
+async function uploadFile(file: GithubFile & GithubContentFile): Promise<[string, string, number]> {
+  const fileUrl = file.download_url || file.raw_url
+  const fileName = file.name || file.filename
+  const { data: fileContent } = await axios.get<string>(fileUrl)
+  const fileSha1 = crypto.createHash('sha1').update(fileContent).digest('hex')
   const fileSize = Buffer.byteLength(fileContent, 'utf8')
   await axios.request({
     url: fileUploadEndpoint,
@@ -20,34 +23,48 @@ async function uploadFile(file: GithubFile): Promise<[string, string, number]> {
     },
     data: fileContent,
   })
-  return [file.filename, fileSha1, fileSize]
+  return [fileName, fileSha1, fileSize]
 }
 
-async function triggerDeployment(prNumber: number, files: Array<[string, string, number]>) {
+async function triggerDeployment(files: Array<[string, string, number]>) {
   return axios.request({
     url: deployEndpoint,
+    method: 'post',
     headers: {
       Authorization: `BEARER ${vercelToken}`,
       'Content-Type': 'application/json',
     },
     data: {
-      name: `css-contest-entry-${prNumber}`,
+      name: vercel_project_id,
       files: files.map((file) => ({
         file: file[0],
         sha: file[1],
         size: file[2],
       })),
+      projectSettings: {
+        framework: null,
+      },
     },
   })
 }
 
-export async function deployPullRequestPreview(prNumber: number, files: GithubFile[]): Promise<void> {
+export async function deployPullRequestPreview(
+  prNumber: number,
+  files: Array<GithubContentFile | GithubFile>,
+): Promise<void> {
   Promise.all(files.map(uploadFile))
-    .then((filesSha) => triggerDeployment(prNumber, filesSha))
+    .then((filesSha) => triggerDeployment(filesSha))
     .then((data) => {
       console.log(`Deployed ${prNumber} successfully.`, { data })
     })
     .catch((error) => {
-      console.error(`Something went wrong while trying to deploy PR#${prNumber}.`, { error })
+      console.error(`Something went wrong while trying to deploy PR#${prNumber}.\n`)
+      if (error.response) {
+        console.error(`status: ${error.response.status}\n`)
+        console.error(`status-text: ${error.response.statusText}\n`)
+        console.error(`data: ${JSON.stringify(error.response.data)}.`)
+      } else {
+        console.error(error)
+      }
     })
 }

@@ -1,5 +1,5 @@
 - [x] Check issue invalidation
-- [ ] Assign & Verify PR to current week
+- [x] Assign & Verify PR to current week
 - [ ] Deploy PR preview (adding author data to template)
 - [ ] Select winning PR
 - [ ] Deploy winning PR to production
