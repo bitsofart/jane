@@ -3,7 +3,7 @@ import { getGhClient } from './gh'
 import { owner, repo, config } from './config'
 import { getContestPeriod } from './contest'
 import { pullRequetsAssigned, pullRequestClosedDueToChanges } from './content'
-import { PullRequestWebhookActions, GithubFile } from './types'
+import { PullRequestWebhookActions, GithubContentFile, GithubFile } from './types'
 import { getReactions } from './reactions'
 import { deployPullRequestPreview } from './deploy'
 
@@ -24,6 +24,12 @@ async function invalidatePullRequest(prNumber: number) {
   gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestClosedDueToChanges })
 }
 
+async function getIndexHtml(): Promise<GithubContentFile> {
+  const gh = getGhClient()
+  const { data: fileContent } = await gh.repos.getContent({ owner, repo, path: 'index.html' })
+  return fileContent
+}
+
 async function verifyAndDeploy(pullRequetsNumber: number, action: PullRequestWebhookActions): Promise<void> {
   if (!['opened', 'edited', 'synchronize'].includes(action)) {
     throw new Error(`Not supported webhook action: ${action}`)
@@ -36,7 +42,8 @@ async function verifyAndDeploy(pullRequetsNumber: number, action: PullRequestWeb
   const [areFilesValid, files] = await verifyFiles(pullRequetsNumber)
   if (areFilesValid) {
     await assingPullRequestToCurrentWeek(pullRequetsNumber)
-    await deployPullRequestPreview(pullRequetsNumber, files)
+    const htmlFile = await getIndexHtml()
+    await deployPullRequestPreview(pullRequetsNumber, [htmlFile, ...files])
   }
 }
 
