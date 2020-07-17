@@ -28,5 +28,9 @@ export const pullRequestClosedDueToChanges = `**Your Pull Request is being autom
 
 Pull requests can't be changed after there were already reactions to it.
 
-For more information on how the contest works, please check this document: [Submission](https://github.com/bitsofart/contest/wiki).
+For more information on how the contest works, please check this document: [Submission](https://github.com/bitsofart/contest/wiki).  `
+
+export const previewDeployed = (deployUrl: string): string => `**Your submission is being deployed**
+
+Your submission is being deployed and should be available soon here: [https://${deployUrl}](https://${deployUrl}).
 `

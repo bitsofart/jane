@@ -2,7 +2,7 @@ import moment from 'moment'
 import { getGhClient } from './gh'
 import { owner, repo, config } from './config'
 import { getContestPeriod } from './contest'
-import { pullRequetsAssigned, pullRequestClosedDueToChanges } from './content'
+import { previewDeployed, pullRequetsAssigned, pullRequestClosedDueToChanges } from './content'
 import { PullRequestWebhookActions, GithubContentFile, GithubFile } from './types'
 import { getReactions } from './reactions'
 import { deployPullRequestPreview } from './deploy'
@@ -30,20 +30,22 @@ async function getIndexHtml(): Promise<GithubContentFile> {
   return fileContent
 }
 
-async function verifyAndDeploy(pullRequetsNumber: number, action: PullRequestWebhookActions): Promise<void> {
+async function verifyAndDeploy(prNumber: number, action: PullRequestWebhookActions): Promise<void> {
   if (!['opened', 'edited', 'synchronize'].includes(action)) {
     throw new Error(`Not supported webhook action: ${action}`)
   }
 
-  const reactions = await getReactions(pullRequetsNumber)
+  const reactions = await getReactions(prNumber)
   if (action === 'synchronize' && reactions.length) {
-    return await invalidatePullRequest(pullRequetsNumber)
+    return await invalidatePullRequest(prNumber)
   }
-  const [areFilesValid, files] = await verifyFiles(pullRequetsNumber)
+  const [areFilesValid, files] = await verifyFiles(prNumber)
   if (areFilesValid) {
-    await assingPullRequestToCurrentWeek(pullRequetsNumber)
+    await assingPullRequestToCurrentWeek(prNumber)
     const htmlFile = await getIndexHtml()
-    await deployPullRequestPreview(pullRequetsNumber, [htmlFile, ...files])
+    const deployUrl = await deployPullRequestPreview(prNumber, [htmlFile, ...files])
+    const gh = getGhClient()
+    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
   }
 }
 
