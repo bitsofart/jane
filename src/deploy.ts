@@ -51,20 +51,21 @@ async function triggerDeployment(files: Array<[string, string, number]>) {
 export async function deployPullRequestPreview(
   prNumber: number,
   files: Array<GithubContentFile | GithubFile>,
-): Promise<void> {
-  Promise.all(files.map(uploadFile))
-    .then((filesSha) => triggerDeployment(filesSha))
-    .then((data) => {
-      console.log(`Deployed ${prNumber} successfully.`, { data })
-    })
-    .catch((error) => {
-      console.error(`Something went wrong while trying to deploy PR#${prNumber}.\n`)
-      if (error.response) {
-        console.error(`status: ${error.response.status}\n`)
-        console.error(`status-text: ${error.response.statusText}\n`)
-        console.error(`data: ${JSON.stringify(error.response.data)}.`)
-      } else {
-        console.error(error)
-      }
-    })
+): Promise<string> {
+  try {
+    const filesSha = await Promise.all(files.map(uploadFile))
+    const {
+      data: { url: deployUrl },
+    } = await triggerDeployment(filesSha)
+    return deployUrl
+  } catch (error) {
+    console.error(`Something went wrong while trying to deploy PR#${prNumber}.\n`)
+    if (error.response) {
+      console.error(`status: ${error.response.status}\n`)
+      console.error(`status-text: ${error.response.statusText}\n`)
+      console.error(`data: ${JSON.stringify(error.response.data)}.`)
+    } else {
+      console.error(error)
+    }
+  }
 }
