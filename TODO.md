@@ -4,4 +4,5 @@
 - [ ] Select winning PR
 - [ ] Deploy winning PR to production
 - [ ] Setup crontab
+- [ ] Handle API failures (availability, rate limit, etc.)
 - [ ] Run pilot
