@@ -9,8 +9,9 @@ import { deployPullRequestPreview } from './deploy'
 
 async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[]]> {
   const gh = getGhClient()
-  const { data: files } = await gh.pulls.listFiles({ owner, repo, pull_number: prNumber })
+  const { data: prFiles } = await gh.pulls.listFiles({ owner, repo, pull_number: prNumber })
   const { ALLOWED_FILES: allowedFiles } = config
+  const files: GithubFile[] = prFiles.map((file) => ({ ...file, githubFileType: 'pr' }))
   return [
     files.reduce((cssOnly, { filename }) => {
       return cssOnly && allowedFiles.includes(filename)
@@ -27,7 +28,7 @@ async function invalidatePullRequest(prNumber: number) {
 async function getIndexHtml(): Promise<GithubContentFile> {
   const gh = getGhClient()
   const { data: fileContent } = await gh.repos.getContent({ owner, repo, path: 'index.html' })
-  return fileContent
+  return { ...fileContent, githubFileType: 'content' }
 }
 
 async function verifyAndDeploy(prNumber: number, action: PullRequestWebhookActions): Promise<void> {

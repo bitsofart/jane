@@ -229,6 +229,8 @@ export type Label = {
 }
 
 export type GithubFile = {
+  // quick workaround to allow easier type distinction
+  githubFileType: 'pr'
   sha: string
   filename: string
   status: string
@@ -242,6 +244,8 @@ export type GithubFile = {
 }
 
 export type GithubContentFile = {
+  // quick workaround to allow easier type distinction when used with GithubFile
+  githubFileType: 'content'
   type: string
   encoding: string
   size: number

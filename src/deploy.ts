@@ -7,9 +7,9 @@ const fileUploadEndpoint = 'https://api.vercel.com/v2/now/files'
 const deployEndpoint = 'https://api.vercel.com/v12/now/deployments?forceNew=1'
 const vercelToken = process.env.VERCEL_TOKEN
 
-async function uploadFile(file: GithubFile & GithubContentFile): Promise<[string, string, number]> {
-  const fileUrl = file.download_url || file.raw_url
-  const fileName = file.name || file.filename
+async function uploadFile(file: GithubFile | GithubContentFile): Promise<[string, string, number]> {
+  const fileUrl = file.githubFileType === 'pr' ? file.raw_url : file.download_url
+  const fileName = file.githubFileType === 'pr' ? file.filename : file.name
   const { data: fileContent } = await axios.get<string>(fileUrl)
   const fileSha1 = crypto.createHash('sha1').update(fileContent).digest('hex')
   const fileSize = Buffer.byteLength(fileContent, 'utf8')
@@ -53,7 +53,9 @@ export async function deployPullRequestPreview(
   files: Array<GithubContentFile | GithubFile>,
 ): Promise<string> {
   try {
+    console.log(`Gathering files for deploying ${prNumber}`)
     const filesSha = await Promise.all(files.map(uploadFile))
+    console.log(`Triggering deploy ${prNumber}`)
     const {
       data: { url: deployUrl },
     } = await triggerDeployment(filesSha)

@@ -1,8 +1,8 @@
 import moment from 'moment'
-import Handlebars from 'handlebars'
 import { config, owner, repo } from './config'
 import { getContestPeriod } from './contest'
 import { getGhClient } from './gh'
+import { buildContent } from './template'
 import { issueAssigned, issueSelected, issueClosedDueToEdition } from './content'
 import { Issue, IssueWebhookPayload, IssueWebhookActions, ContestPeriod, Label } from './types'
 import { getPosititiveReactionsCount, getReactions } from './reactions'
@@ -91,8 +91,11 @@ async function getMostVotedIssue(issues: Issue[]): Promise<Issue | null> {
   })[0]['issue']
 }
 
-// @TODO This should probably live somewhere else
-async function buildContent(content: string, contentCreatorUrl: string, contentCreatorHandle: string): Promise<string> {
+async function prepareContentFile(
+  content: string,
+  contentCreatorUrl: string,
+  contentCreatorHandle: string,
+): Promise<string> {
   const gh = getGhClient()
   const {
     data: { content: encodedTemplateFile },
@@ -101,8 +104,7 @@ async function buildContent(content: string, contentCreatorUrl: string, contentC
     repo,
     path: config.HTML_TEMPLATE_PATH,
   })
-  const template = Handlebars.compile(Buffer.from(encodedTemplateFile, 'base64').toString('utf-8'))
-  return template({
+  return buildContent(encodedTemplateFile, {
     content,
     content_creator_url: contentCreatorUrl,
     concent_creator_handle: contentCreatorHandle,
@@ -121,7 +123,7 @@ async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): P
     data: { sha: baseTree },
   } = await gh.git.getTree({ owner, repo, tree_sha: latestCommit })
   const filename = 'index.html'
-  const content = await buildContent(issue.body, issue.user.url, issue.user.login)
+  const content = await prepareContentFile(issue.body, issue.user.url, issue.user.login)
   const {
     data: { sha: newTreeSha },
   } = await gh.git.createTree({
