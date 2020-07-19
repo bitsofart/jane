@@ -1,7 +1,7 @@
 - [x] Check issue invalidation
 - [x] Assign & Verify PR to current week
-- [X] Deploy PR preview (adding author data to template)
-- [ ] Fix template styles
+- [x] Deploy PR preview (adding author data to template)
+- [x] Fix template styles
 - [ ] Select winning PR
 - [ ] Deploy winning PR to production
 - [ ] Setup crontab
