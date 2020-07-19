@@ -47,6 +47,8 @@ async function verify(issueNumber: number, action: IssueWebhookActions, payload:
     if (action === 'opened') {
       return await assignIssueForNextWeeksContest(issueNumber)
     }
+
+    console.log(`Nothing to do in issue #${issueNumber}`)
   } catch (error) {
     console.error(`Sorry, but it wasn't possible to verify issue #${issueNumber} due to the following error:\n`, {
       error,
@@ -55,6 +57,7 @@ async function verify(issueNumber: number, action: IssueWebhookActions, payload:
 }
 
 async function getIssues(labelName: string): Promise<Issue[]> {
+  console.log(`Listing issues...`)
   const gh = getGhClient()
   const { data: issues } = await gh.issues.listForRepo({
     owner,
@@ -67,6 +70,7 @@ async function getIssues(labelName: string): Promise<Issue[]> {
 }
 
 async function getMostVotedIssue(issues: Issue[]): Promise<Issue | null> {
+  console.log('Getting most voted issue.')
   const all = await Promise.all(
     issues.map(async (issue) => {
       const reactions = await getReactions(issue.number)
@@ -77,7 +81,7 @@ async function getMostVotedIssue(issues: Issue[]): Promise<Issue | null> {
     }),
   )
   if (!all.length) {
-    return null
+    throw new Error("No issues listed. Can't select a winner")
   }
 
   return all.sort((issueA, issueB) => {
@@ -143,6 +147,7 @@ async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): P
 }
 
 async function makeWinner(issue: Issue, period: ContestPeriod): Promise<Issue | null> {
+  console.log(`I will make #${issue.number} the next contest content`)
   const winnerLabel = config.WINNER_LABEL
   const gh = getGhClient()
   if (!winnerLabel) {
@@ -157,12 +162,12 @@ async function makeWinner(issue: Issue, period: ContestPeriod): Promise<Issue | 
     issue_number: issue.number,
     labels: [winnerLabel],
   })
-  const { sha: commitSha, url: commitUrl } = await commitWinningIssue(issue, period)
+  const { sha: commitSha } = await commitWinningIssue(issue, period)
   await gh.issues.createComment({
     owner,
     repo,
     issue_number: issue.number,
-    body: issueSelected(commitSha, commitUrl),
+    body: issueSelected(commitSha),
   })
   return issue
 }
