@@ -1,4 +1,5 @@
 import moment from 'moment'
+import Webhooks from '@octokit/webhooks'
 import { getGhClient } from './gh'
 import { owner, repo, config } from './config'
 import { getContestPeriod } from './contest'
@@ -31,7 +32,11 @@ async function getIndexHtml(): Promise<GithubContentFile> {
   return { ...fileContent, githubFileType: 'content' }
 }
 
-async function verifyAndDeploy(prNumber: number, action: PullRequestWebhookActions): Promise<void> {
+async function verifyAndDeploy(
+  prNumber: number,
+  action: PullRequestWebhookActions,
+  payload: Webhooks.WebhookPayloadPullRequest,
+): Promise<void> {
   if (!['opened', 'edited', 'synchronize'].includes(action)) {
     throw new Error(`Not supported webhook action: ${action}`)
   }
@@ -44,7 +49,10 @@ async function verifyAndDeploy(prNumber: number, action: PullRequestWebhookActio
   if (areFilesValid) {
     await assingPullRequestToCurrentWeek(prNumber)
     const htmlFile = await getIndexHtml()
-    const deployUrl = await deployPullRequestPreview(prNumber, [htmlFile, ...files])
+    const deployUrl = await deployPullRequestPreview(prNumber, [htmlFile, ...files], {
+      url: payload.pull_request.user.html_url,
+      handle: payload.pull_request.user.login,
+    })
     const gh = getGhClient()
     await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
   }
@@ -60,7 +68,11 @@ async function assingPullRequestToCurrentWeek(prNumber: number): Promise<void> {
 }
 
 export type PullRequestHandlers = {
-  verifyAndDeploy: (pullRequetsNumber: number, action: PullRequestWebhookActions) => Promise<void>
+  verifyAndDeploy: (
+    pullRequetsNumber: number,
+    action: PullRequestWebhookActions,
+    payload: Webhooks.WebhookPayloadPullRequest,
+  ) => Promise<void>
 }
 
 export const pullRequests: PullRequestHandlers = {

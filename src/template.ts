@@ -1,4 +1,6 @@
 import Handlebars from 'handlebars'
+import { getGhClient } from './gh'
+import { config, owner, repo } from './config'
 
 // There's a quick trick here so we can add content creator and style creator data at different moments. When we compile
 // the template file the first time, it happens due to content selection, so we add only content creator data and the
@@ -7,7 +9,7 @@ import Handlebars from 'handlebars'
 type ContentOptionsFirstRun = {
   content: string
   content_creator_url: string
-  concent_creator_handle: string
+  content_creator_handle: string
 }
 
 type ContentOptionsSecondRun = {
@@ -17,7 +19,22 @@ type ContentOptionsSecondRun = {
 
 type ContentOptions = ContentOptionsFirstRun | ContentOptionsSecondRun
 
-export async function buildContent(encodedTemplateFile: string, opts: ContentOptions): Promise<string> {
+async function buildContent(encodedTemplateFile: string, opts: ContentOptions): Promise<string> {
   const template = Handlebars.compile<ContentOptions>(Buffer.from(encodedTemplateFile, 'base64').toString('utf-8'))
   return template(opts)
+}
+
+export async function prepareContentFile(
+  opts: ContentOptions,
+  path: string = config.HTML_TEMPLATE_PATH,
+): Promise<string> {
+  const gh = getGhClient()
+  const {
+    data: { content: encodedTemplateFile },
+  } = await gh.repos.getContent({
+    owner,
+    repo,
+    path,
+  })
+  return buildContent(encodedTemplateFile, opts)
 }
