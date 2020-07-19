@@ -15,6 +15,10 @@ async function assignIssueForNextWeeksContest(issueNumber: number): Promise<void
   await gh.issues.createComment({ owner, repo, issue_number: issueNumber, body: issueAssigned })
 }
 
+function excludePullRequest(issue: Issue): boolean {
+  return !issue.pull_request
+}
+
 function containsLabel(name: string, labels: Label[]): boolean {
   const result = labels.reduce((contains, label) => {
     if (contains) return contains
@@ -66,7 +70,7 @@ async function getIssues(labelName: string): Promise<Issue[]> {
     sort: 'created',
     state: 'open',
   })
-  return issues
+  return issues.filter(excludePullRequest)
 }
 
 async function getMostVotedIssue(issues: Issue[]): Promise<Issue | null> {
@@ -126,9 +130,8 @@ async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): P
     tree: newTreeSha,
     parents: [latestCommit],
   })
-  const {
-    data: { url: commitUrl },
-  } = await gh.git.updateRef({ owner, repo, ref, sha: newCommitSha })
+  await gh.git.updateRef({ owner, repo, ref, sha: newCommitSha })
+  const commitUrl = `https://github.com/${owner}/${repo}/commit/${newCommitSha}`
   return { sha: newCommitSha, url: commitUrl }
 }
 
@@ -148,12 +151,12 @@ async function makeWinner(issue: Issue, period: ContestPeriod): Promise<Issue | 
     issue_number: issue.number,
     labels: [winnerLabel],
   })
-  const { sha: commitSha } = await commitWinningIssue(issue, period)
+  const { sha: commitSha, url: commitUrl } = await commitWinningIssue(issue, period)
   await gh.issues.createComment({
     owner,
     repo,
     issue_number: issue.number,
-    body: issueSelected(commitSha),
+    body: issueSelected(commitSha, commitUrl),
   })
   return issue
 }
@@ -162,7 +165,7 @@ async function closeIssuesForPeriod(period: ContestPeriod): Promise<void> {
   const gh = getGhClient()
   const { data: issues } = await gh.issues.listForRepo({ owner, repo, labels: period.fullLabel })
   await Promise.all(
-    issues.map(async (issue) => {
+    issues.filter(excludePullRequest).map(async (issue) => {
       await gh.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' })
     }),
   )

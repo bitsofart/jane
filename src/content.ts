@@ -3,11 +3,14 @@ export const issueAssigned = `**Your issue is participating in this weeks choice
 For more information on how content selection works, please check this document: [Content Selection](https://github.com/bitsofart/contest/wiki)
 `
 
-export const issueSelected = (commitSha: string): string => `**Your issue was selected for next week's contest**
+export const issueSelected = (
+  commitSha: string,
+  commitUrl: string,
+): string => `**Your issue was selected for next week's contest**
 
 Your issue was selected and it will be the base for next week's contest!
 
-_Commit_: #${commitSha}.
+_Commit_: [#${commitSha.slice(0, 8)}](${commitUrl}).
 
 Your github profile will also be linked from the contest homepage once a CSS winner is selected.
 
