@@ -1,16 +1,22 @@
 import axios from 'axios'
 import crypto from 'crypto'
 import { vercel_project_id } from './config'
-import { GithubFile, GithubContentFile } from './types'
+import { prepareContentFile } from './template'
+import { PRAuthor, GithubFile, GithubContentFile } from './types'
 
 const fileUploadEndpoint = 'https://api.vercel.com/v2/now/files'
 const deployEndpoint = 'https://api.vercel.com/v12/now/deployments?forceNew=1'
 const vercelToken = process.env.VERCEL_TOKEN
 
-async function uploadFile(file: GithubFile | GithubContentFile): Promise<[string, string, number]> {
+async function uploadFile(file: GithubFile | GithubContentFile, author: PRAuthor): Promise<[string, string, number]> {
   const fileUrl = file.githubFileType === 'pr' ? file.raw_url : file.download_url
   const fileName = file.githubFileType === 'pr' ? file.filename : file.name
-  const { data: fileContent } = await axios.get<string>(fileUrl)
+  console.log(`Uploading ${fileName}...`)
+  const { data: rawContent } = await axios.get<string>(fileUrl)
+  const fileContent =
+    fileName === 'index.html'
+      ? await prepareContentFile({ style_creator_url: author.url, style_creator_handle: author.handle }, fileName)
+      : rawContent
   const fileSha1 = crypto.createHash('sha1').update(fileContent).digest('hex')
   const fileSize = Buffer.byteLength(fileContent, 'utf8')
   await axios.request({
@@ -51,10 +57,11 @@ async function triggerDeployment(files: Array<[string, string, number]>) {
 export async function deployPullRequestPreview(
   prNumber: number,
   files: Array<GithubContentFile | GithubFile>,
+  author: PRAuthor,
 ): Promise<string> {
   try {
     console.log(`Gathering files for deploying ${prNumber}`)
-    const filesSha = await Promise.all(files.map(uploadFile))
+    const filesSha = await Promise.all(files.map((file) => uploadFile(file, author)))
     console.log(`Triggering deploy ${prNumber}`)
     const {
       data: { url: deployUrl },

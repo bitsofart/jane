@@ -220,6 +220,11 @@ export type Reaction = {
   created_at: string
 }
 
+export type PRAuthor = {
+  url: string
+  handle: string
+}
+
 export type Label = {
   id: number
   color: string

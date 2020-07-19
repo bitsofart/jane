@@ -2,7 +2,7 @@ import moment from 'moment'
 import { config, owner, repo } from './config'
 import { getContestPeriod } from './contest'
 import { getGhClient } from './gh'
-import { buildContent } from './template'
+import { prepareContentFile } from './template'
 import { issueAssigned, issueSelected, issueClosedDueToEdition } from './content'
 import { Issue, IssueWebhookPayload, IssueWebhookActions, ContestPeriod, Label } from './types'
 import { getPosititiveReactionsCount, getReactions } from './reactions'
@@ -91,26 +91,6 @@ async function getMostVotedIssue(issues: Issue[]): Promise<Issue | null> {
   })[0]['issue']
 }
 
-async function prepareContentFile(
-  content: string,
-  contentCreatorUrl: string,
-  contentCreatorHandle: string,
-): Promise<string> {
-  const gh = getGhClient()
-  const {
-    data: { content: encodedTemplateFile },
-  } = await gh.repos.getContent({
-    owner,
-    repo,
-    path: config.HTML_TEMPLATE_PATH,
-  })
-  return buildContent(encodedTemplateFile, {
-    content,
-    content_creator_url: contentCreatorUrl,
-    concent_creator_handle: contentCreatorHandle,
-  })
-}
-
 async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): Promise<{ sha: string; url: string }> {
   const gh = getGhClient()
   const ref = 'heads/master'
@@ -123,7 +103,11 @@ async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): P
     data: { sha: baseTree },
   } = await gh.git.getTree({ owner, repo, tree_sha: latestCommit })
   const filename = 'index.html'
-  const content = await prepareContentFile(issue.body, issue.user.url, issue.user.login)
+  const content = await prepareContentFile({
+    content: issue.body,
+    content_creator_url: issue.user.html_url,
+    content_creator_handle: issue.user.login,
+  })
   const {
     data: { sha: newTreeSha },
   } = await gh.git.createTree({
