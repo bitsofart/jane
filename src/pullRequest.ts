@@ -1,3 +1,4 @@
+import axios from 'axios'
 import moment from 'moment'
 import Webhooks from '@octokit/webhooks'
 import { getGhClient } from './gh'
@@ -10,23 +11,45 @@ import {
   pullRequestClosedDueToChanges,
   pullRequestWinnerCommit,
   pullRequetsWinnerComment,
+  invalidPullRequest,
 } from './content'
 import { PullRequestWebhookActions, GithubFileWithContent, GithubFile, Issue, ContestPeriod } from './types'
 import { getReactions } from './reactions'
 import { deployPullRequestPreview } from './deploy'
 import { getIssues, getMostVoted, closeIssuesForPeriod } from './issue'
 
-async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[]]> {
+async function getFileRawContent(rawContentUrl: string): Promise<string> {
+  const { data } = await axios.get(rawContentUrl)
+  return data
+}
+
+async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[], string | undefined]> {
   const gh = getGhClient()
   const { data: prFiles } = await gh.pulls.listFiles({ owner, repo, pull_number: prNumber })
-  const { ALLOWED_FILES: allowedFiles } = config
+
+  const allowedFiles = ['styles.css', 'index.html']
   const files: GithubFile[] = prFiles.map((file) => ({ ...file, githubFileType: 'pr' }))
-  return [
-    files.reduce((cssOnly, { filename }) => {
-      return cssOnly && allowedFiles.includes(filename)
-    }, true),
-    files,
+  const areChangedFilesAllowed =
+    files.length === 2 &&
+    files.reduce((areAllowed, { filename }) => {
+      return areAllowed && allowedFiles.includes(filename)
+    }, true)
+  const nextHtml = await getNextIndexHtml()
+  const prHtml = files.filter(({ filename }) => filename === 'index.html')[0]
+  if (!prHtml) {
+    throw new Error('Something went wrong while trying to read HTML content...')
+  }
+  const [nextHtmlContent, prHtmlContent] = [
+    await getFileRawContent(nextHtml.download_url),
+    await getFileRawContent(prHtml.raw_url),
   ]
+  const isHtmlContentCorrect = nextHtmlContent === prHtmlContent
+  const error = !areChangedFilesAllowed
+    ? 'PR contains invalid files'
+    : !isHtmlContentCorrect
+    ? 'PR contains invalid HTML content'
+    : undefined
+  return [areChangedFilesAllowed && isHtmlContentCorrect, files, error]
 }
 
 async function invalidatePullRequest(prNumber: number) {
@@ -34,9 +57,9 @@ async function invalidatePullRequest(prNumber: number) {
   gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestClosedDueToChanges })
 }
 
-async function getIndexHtml(): Promise<GithubFileWithContent> {
+async function getNextIndexHtml(): Promise<GithubFileWithContent> {
   const gh = getGhClient()
-  const { data: fileContent } = await gh.repos.getContent({ owner, repo, path: 'index.html' })
+  const { data: fileContent } = await gh.repos.getContent({ owner, repo, path: 'next.html' })
   return { ...fileContent, githubFileType: 'content' }
 }
 
@@ -57,17 +80,18 @@ async function verifyAndDeploy(
   if (action === 'synchronize' && reactions.length) {
     return await invalidatePullRequest(prNumber)
   }
-  const [areFilesValid, files] = await verifyFiles(prNumber)
-  if (areFilesValid) {
-    await assingPullRequestToCurrentWeek(prNumber)
-    const htmlFile = await getIndexHtml()
-    const deployUrl = await deployPullRequestPreview(prNumber, [htmlFile, ...files], {
-      url: payload.pull_request.user.html_url,
-      handle: payload.pull_request.user.login,
-    })
-    const gh = getGhClient()
-    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
+  const [areFilesValid, files, error] = await verifyFiles(prNumber)
+  const gh = getGhClient()
+  if (!areFilesValid) {
+    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: invalidPullRequest(error) })
+    return
   }
+  await assingPullRequestToCurrentWeek(prNumber)
+  const deployUrl = await deployPullRequestPreview(prNumber, files, {
+    url: payload.pull_request.user.html_url,
+    handle: payload.pull_request.user.login,
+  })
+  await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
 }
 
 async function assingPullRequestToCurrentWeek(prNumber: number): Promise<void> {

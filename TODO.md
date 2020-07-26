@@ -3,7 +3,7 @@
 - [x] Deploy PR preview (adding author data to template)
 - [x] Fix template styles
 - [x] Select winning PR
-- [ ] Work with next.html and next.css files
+- [x] Work with next.html and next.css files
 - [ ] Deploy winning PR to production
 - [ ] Handle API failures (availability, rate limit, etc.)
 - [ ] Setup crontab

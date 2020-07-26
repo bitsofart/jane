@@ -106,7 +106,7 @@ async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): P
   const {
     data: { sha: baseTree },
   } = await gh.git.getTree({ owner, repo, tree_sha: latestCommit })
-  const filename = 'index.html'
+  const filename = 'next.html'
   const content = await prepareContentFile({
     content: issue.body,
     content_creator_url: issue.user.html_url,

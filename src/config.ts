@@ -1,5 +1,4 @@
 export const config = {
-  ALLOWED_FILES: ['styles.css'],
   ISSUE_CYCLE: '1w',
   ISSUE_LABEL: 'Next content',
   PULL_REQUEST_LABEL: 'Entry submission',

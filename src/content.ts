@@ -42,13 +42,20 @@ export const pullRequestClosedDueToChanges = `**Your Pull Request is being autom
 
 Pull requests can't be changed after there were already reactions to it.
 
-For more information on how the contest works, please check this document: [Submission](https://github.com/bitsofart/contest/wiki).  `
+For more information on how the contest works, please check this document: [Submission](https://github.com/bitsofart/contest/wiki).`
 
 export const previewDeployed = (deployUrl: string): string => `**Your submission is being deployed**
 
 Your submission is being deployed and should be available soon here: [https://${deployUrl}](https://${deployUrl}).
 `
+export const invalidPullRequest = (error: string): string => `**Quick notice**
 
+The following PR does not comply to the contest guidelines due to: ${error}.
+
+If you wanted to participate on the contest with this PR, please check [our guidelines for entries](https://github.com/bitsofart/contest/wiki), close this PR and open a new one.
+
+If this was intended, just ignore this message.
+`
 export const pullRequestWinnerCommit = (weekLabel: string): string => `${weekLabel} contest winner.`
 export const pullRequetsWinnerComment = `:tada: This PR is this weeks constest winner! :tada:
 

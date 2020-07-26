@@ -19,9 +19,14 @@ type ContentOptionsSecondRun = {
 
 type ContentOptions = ContentOptionsFirstRun | ContentOptionsSecondRun
 
-async function buildContent(encodedTemplateFile: string, opts: ContentOptions): Promise<string> {
-  const template = Handlebars.compile<ContentOptions>(Buffer.from(encodedTemplateFile, 'base64').toString('utf-8'))
-  return template(opts)
+export async function buildContent(
+  templateContent: string,
+  opts: ContentOptions,
+  base64Encoded = true,
+): Promise<string> {
+  const template = base64Encoded ? Buffer.from(templateContent, 'base64').toString('utf-8') : templateContent
+  const build = Handlebars.compile<ContentOptions>(template)
+  return build(opts)
 }
 
 export async function prepareContentFile(
