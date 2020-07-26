@@ -2,13 +2,16 @@ import axios from 'axios'
 import crypto from 'crypto'
 import { vercel_project_id } from './config'
 import { prepareContentFile } from './template'
-import { PRAuthor, GithubFile, GithubContentFile } from './types'
+import { PRAuthor, GithubFile, GithubFileWithContent } from './types'
 
 const fileUploadEndpoint = 'https://api.vercel.com/v2/now/files'
 const deployEndpoint = 'https://api.vercel.com/v12/now/deployments?forceNew=1'
 const vercelToken = process.env.VERCEL_TOKEN
 
-async function uploadFile(file: GithubFile | GithubContentFile, author: PRAuthor): Promise<[string, string, number]> {
+async function uploadFile(
+  file: GithubFile | GithubFileWithContent,
+  author: PRAuthor,
+): Promise<[string, string, number]> {
   const fileUrl = file.githubFileType === 'pr' ? file.raw_url : file.download_url
   const fileName = file.githubFileType === 'pr' ? file.filename : file.name
   console.log(`Uploading ${fileName}...`)
@@ -56,7 +59,7 @@ async function triggerDeployment(files: Array<[string, string, number]>) {
 
 export async function deployPullRequestPreview(
   prNumber: number,
-  files: Array<GithubContentFile | GithubFile>,
+  files: Array<GithubFileWithContent | GithubFile>,
   author: PRAuthor,
 ): Promise<string> {
   try {

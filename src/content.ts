@@ -22,6 +22,16 @@ This Content Suggestion issue is being closed because its content was edited.
 
 For more information on how the contest works, please check this document: [Content Selection](https://github.com/bitsofart/contest/wiki)`
 
+export const closingIssueComment = `**We're closing this issue**
+
+Thank you very much for participating. We hope to keep seeing you around! :wave:.
+`
+
+export const closingPRComment = `**We're closing this PR**
+
+Thank you very much for participating. We hope to keep seeing you around! :wave:.
+`
+
 export const pullRequetsAssigned = `**Your pull request is participating on this week's CSS Contest**
 
 Thanks for sending us your submission. It will be deployed soon, so others can preview the result of your work.
@@ -37,4 +47,12 @@ For more information on how the contest works, please check this document: [Subm
 export const previewDeployed = (deployUrl: string): string => `**Your submission is being deployed**
 
 Your submission is being deployed and should be available soon here: [https://${deployUrl}](https://${deployUrl}).
+`
+
+export const pullRequestWinnerCommit = (weekLabel: string): string => `${weekLabel} contest winner.`
+export const pullRequetsWinnerComment = `:tada: This PR is this weeks constest winner! :tada:
+
+It will be merged and deployed to [csscontest.com](https://csscontest.com) soon.
+
+Thank you very much for your participation!
 `

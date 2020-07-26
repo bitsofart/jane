@@ -7,6 +7,7 @@ export const config = {
   POSITIVE_REACTIONS: ['THUMBS_UP', 'LAUGH', 'HOORAY', 'HEART', 'ROCKET'],
   REPOSITORY: 'contest',
   WINNER_LABEL: 'Selected',
+  PULL_REQUEST_WINNER: 'Winner',
   HTML_TEMPLATE_PATH: 'template.hbs',
 }
 

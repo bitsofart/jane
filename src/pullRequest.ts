@@ -3,10 +3,18 @@ import Webhooks from '@octokit/webhooks'
 import { getGhClient } from './gh'
 import { owner, repo, config } from './config'
 import { getContestPeriod } from './contest'
-import { previewDeployed, pullRequetsAssigned, pullRequestClosedDueToChanges } from './content'
-import { PullRequestWebhookActions, GithubContentFile, GithubFile } from './types'
+import {
+  closingPRComment,
+  previewDeployed,
+  pullRequetsAssigned,
+  pullRequestClosedDueToChanges,
+  pullRequestWinnerCommit,
+  pullRequetsWinnerComment,
+} from './content'
+import { PullRequestWebhookActions, GithubFileWithContent, GithubFile, Issue, ContestPeriod } from './types'
 import { getReactions } from './reactions'
 import { deployPullRequestPreview } from './deploy'
+import { getIssues, getMostVoted, closeIssuesForPeriod } from './issue'
 
 async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[]]> {
   const gh = getGhClient()
@@ -26,7 +34,7 @@ async function invalidatePullRequest(prNumber: number) {
   gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestClosedDueToChanges })
 }
 
-async function getIndexHtml(): Promise<GithubContentFile> {
+async function getIndexHtml(): Promise<GithubFileWithContent> {
   const gh = getGhClient()
   const { data: fileContent } = await gh.repos.getContent({ owner, repo, path: 'index.html' })
   return { ...fileContent, githubFileType: 'content' }
@@ -39,6 +47,10 @@ async function verifyAndDeploy(
 ): Promise<void> {
   if (!['opened', 'edited', 'synchronize'].includes(action)) {
     throw new Error(`Not supported webhook action: ${action}`)
+  }
+
+  if (!payload) {
+    throw new Error('Missing webhook payload.')
   }
 
   const reactions = await getReactions(prNumber)
@@ -67,14 +79,45 @@ async function assingPullRequestToCurrentWeek(prNumber: number): Promise<void> {
   await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequetsAssigned })
 }
 
+function excludeIssues(issue: Issue): boolean {
+  return !!issue.pull_request
+}
+
+async function makeWinner(prNumber: number, period: ContestPeriod): Promise<void> {
+  const gh = getGhClient()
+  const { PULL_REQUEST_WINNER: winningPrLabel } = config
+  await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequetsWinnerComment })
+  await gh.pulls.merge({
+    owner,
+    repo,
+    pull_number: prNumber,
+    commit_title: pullRequestWinnerCommit(period.fullLabel),
+  })
+  await gh.issues.addLabels({ owner, repo, issue_number: prNumber, labels: [winningPrLabel] })
+}
+
+async function selectWinner(date = moment()) {
+  const period = getContestPeriod(date)
+  try {
+    const prs = await getIssues(period.fullLabel, excludeIssues)
+    const mostVotedPr = await getMostVoted(prs)
+    await makeWinner(mostVotedPr.number, period)
+    await closeIssuesForPeriod(period, excludeIssues, closingPRComment)
+  } catch (error) {
+    console.error(`Something happened and I can not select a winner for ${period.fullLabel}.`, { error })
+  }
+}
+
 export type PullRequestHandlers = {
   verifyAndDeploy: (
     pullRequetsNumber: number,
     action: PullRequestWebhookActions,
     payload: Webhooks.WebhookPayloadPullRequest,
   ) => Promise<void>
+  selectWinner: (date: moment.Moment) => Promise<void>
 }
 
 export const pullRequests: PullRequestHandlers = {
   verifyAndDeploy,
+  selectWinner,
 }

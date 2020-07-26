@@ -3,7 +3,7 @@ import { config, owner, repo } from './config'
 import { getContestPeriod } from './contest'
 import { getGhClient } from './gh'
 import { prepareContentFile } from './template'
-import { issueAssigned, issueSelected, issueClosedDueToEdition } from './content'
+import { closingIssueComment, issueAssigned, issueSelected, issueClosedDueToEdition } from './content'
 import { Issue, IssueWebhookPayload, IssueWebhookActions, ContestPeriod, Label } from './types'
 import { getPosititiveReactionsCount, getReactions } from './reactions'
 
@@ -60,7 +60,7 @@ async function verify(issueNumber: number, action: IssueWebhookActions, payload:
   }
 }
 
-async function getIssues(labelName: string): Promise<Issue[]> {
+export async function getIssues(labelName: string, issueFilter: (issue: Issue) => boolean): Promise<Issue[]> {
   console.log(`Listing issues...`)
   const gh = getGhClient()
   const { data: issues } = await gh.issues.listForRepo({
@@ -70,11 +70,11 @@ async function getIssues(labelName: string): Promise<Issue[]> {
     sort: 'created',
     state: 'open',
   })
-  return issues.filter(excludePullRequest)
+  return issues.filter(issueFilter)
 }
 
-async function getMostVotedIssue(issues: Issue[]): Promise<Issue | null> {
-  console.log('Getting most voted issue.')
+export async function getMostVoted(issues: Issue[]): Promise<Issue | null> {
+  console.log('Getting most voted.')
   const all = await Promise.all(
     issues.map(async (issue) => {
       const reactions = await getReactions(issue.number)
@@ -135,7 +135,7 @@ async function commitWinningIssue(issue: Issue, contestPeriod: ContestPeriod): P
   return { sha: newCommitSha, url: commitUrl }
 }
 
-async function makeWinner(issue: Issue, period: ContestPeriod): Promise<Issue | null> {
+async function markAsWinnerIssue(issue: Issue, period: ContestPeriod): Promise<Issue | null> {
   console.log(`I will make #${issue.number} the next contest content`)
   const winnerLabel = config.WINNER_LABEL
   const gh = getGhClient()
@@ -161,21 +161,30 @@ async function makeWinner(issue: Issue, period: ContestPeriod): Promise<Issue | 
   return issue
 }
 
-async function closeIssuesForPeriod(period: ContestPeriod): Promise<void> {
+export async function closeIssuesForPeriod(
+  period: ContestPeriod,
+  issueFilter: (issue: Issue) => boolean,
+  comment: string,
+): Promise<void> {
   const gh = getGhClient()
   const { data: issues } = await gh.issues.listForRepo({ owner, repo, labels: period.fullLabel })
   await Promise.all(
-    issues.filter(excludePullRequest).map(async (issue) => {
+    issues.filter(issueFilter).map(async (issue) => {
       await gh.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' })
+      await gh.issues.createComment({ owner, repo, issue_number: issue.number, body: comment })
     }),
   )
 }
 
 async function selectWinner(date: moment.Moment = moment()): Promise<void> {
-  const period = getContestPeriod(date)
   try {
-    makeWinner(await getMostVotedIssue(await getIssues(period.fullLabel)), period)
-    await closeIssuesForPeriod(period)
+    const period = getContestPeriod(date)
+    const issues = await getIssues(period.fullLabel, excludePullRequest)
+    const mostVotedIssue = await getMostVoted(issues)
+    Promise.all([
+      markAsWinnerIssue(mostVotedIssue, period),
+      closeIssuesForPeriod(period, excludePullRequest, closingIssueComment),
+    ])
   } catch (error) {
     console.error('I am sorry but I was unable to select a winner due to the error bellow:\n', error)
   }

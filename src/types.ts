@@ -248,7 +248,7 @@ export type GithubFile = {
   patch: string
 }
 
-export type GithubContentFile = {
+export type GithubFileWithContent = {
   // quick workaround to allow easier type distinction when used with GithubFile
   githubFileType: 'content'
   type: string

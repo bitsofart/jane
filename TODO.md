@@ -2,8 +2,9 @@
 - [x] Assign & Verify PR to current week
 - [x] Deploy PR preview (adding author data to template)
 - [x] Fix template styles
-- [ ] Select winning PR
+- [x] Select winning PR
+- [ ] Work with next.html and next.css files
 - [ ] Deploy winning PR to production
-- [ ] Setup crontab
 - [ ] Handle API failures (availability, rate limit, etc.)
+- [ ] Setup crontab
 - [ ] Run pilot
