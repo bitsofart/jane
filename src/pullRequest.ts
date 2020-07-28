@@ -2,7 +2,7 @@ import axios from 'axios'
 import moment from 'moment'
 import Webhooks from '@octokit/webhooks'
 import { getGhClient } from './gh'
-import { owner, repo, config } from './config'
+import { owner, repo, productionRepo, config } from './config'
 import { getContestPeriod } from './contest'
 import {
   closingPRComment,
@@ -107,9 +107,57 @@ function excludeIssues(issue: Issue): boolean {
   return !!issue.pull_request
 }
 
+async function updateProduction(contestPeriod: ContestPeriod): Promise<void> {
+  const gh = getGhClient()
+  const ref = 'heads/master'
+  const { data: indexFile } = await gh.repos.getContent({ owner, repo, path: 'index.html' })
+  const { data: cssFile } = await gh.repos.getContent({ owner, repo, path: 'styles.css' })
+  const {
+    data: {
+      object: { sha: latestCommit },
+    },
+  } = await gh.git.getRef({ owner, repo: productionRepo, ref })
+  const {
+    data: { sha: baseTree },
+  } = await gh.git.getTree({ owner, repo: productionRepo, tree_sha: latestCommit })
+  const {
+    data: { sha: newTreeSha },
+  } = await gh.git.createTree({
+    owner,
+    repo: productionRepo,
+    tree: [
+      {
+        path: 'index.html',
+        mode: '100644',
+        type: 'blob',
+        content: Buffer.from(indexFile.content, 'base64').toString('utf8'),
+      },
+      {
+        path: 'styles.css',
+        mode: '100644',
+        type: 'blob',
+        content: Buffer.from(cssFile.content, 'base64').toString('utf8'),
+      },
+    ],
+    base_tree: baseTree,
+  })
+  const commitMessage = `Content for week ${contestPeriod.fullLabel}`
+  const {
+    data: { sha: newCommitSha },
+  } = await gh.git.createCommit({
+    owner,
+    repo: productionRepo,
+    message: commitMessage,
+    tree: newTreeSha,
+    parents: [latestCommit],
+  })
+  await gh.git.updateRef({ owner, repo: productionRepo, ref, sha: newCommitSha })
+}
+
 async function makeWinner(prNumber: number, period: ContestPeriod): Promise<void> {
   const gh = getGhClient()
   const { PULL_REQUEST_WINNER: winningPrLabel } = config
+  await gh.issues.addLabels({ owner, repo, issue_number: prNumber, labels: [winningPrLabel] })
   await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequetsWinnerComment })
   await gh.pulls.merge({
     owner,
@@ -117,7 +165,6 @@ async function makeWinner(prNumber: number, period: ContestPeriod): Promise<void
     pull_number: prNumber,
     commit_title: pullRequestWinnerCommit(period.fullLabel),
   })
-  await gh.issues.addLabels({ owner, repo, issue_number: prNumber, labels: [winningPrLabel] })
 }
 
 async function selectWinner(date = moment()) {
@@ -127,6 +174,7 @@ async function selectWinner(date = moment()) {
     const mostVotedPr = await getMostVoted(prs)
     await makeWinner(mostVotedPr.number, period)
     await closeIssuesForPeriod(period, excludeIssues, closingPRComment)
+    await updateProduction(period)
   } catch (error) {
     console.error(`Something happened and I can not select a winner for ${period.fullLabel}.`, { error })
   }

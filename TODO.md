@@ -4,7 +4,9 @@
 - [x] Fix template styles
 - [x] Select winning PR
 - [x] Work with next.html and next.css files
-- [ ] Deploy winning PR to production
-- [ ] Handle API failures (availability, rate limit, etc.)
+- [x] Deploy winning PR to production
+- [ ] Clean-up csscontest.com styles and others
+- [ ] Check cache policies on website
 - [ ] Setup crontab
 - [ ] Run pilot
+- [ ] Handle API failures (availability, rate limit, etc.)
