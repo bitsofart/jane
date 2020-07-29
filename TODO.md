@@ -5,8 +5,9 @@
 - [x] Select winning PR
 - [x] Work with next.html and next.css files
 - [x] Deploy winning PR to production
-- [ ] Clean-up csscontest.com styles and others
-- [ ] Check cache policies on website
+- [x] Clean-up csscontest.com styles and others
+- [x] Check cache policies on website
+- [ ] Write guides, prettify README.md
 - [ ] Setup crontab
 - [ ] Run pilot
 - [ ] Handle API failures (availability, rate limit, etc.)
