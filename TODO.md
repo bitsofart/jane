@@ -7,7 +7,12 @@
 - [x] Deploy winning PR to production
 - [x] Clean-up csscontest.com styles and others
 - [x] Check cache policies on website
-- [ ] Write guides, prettify README.md
+- [ ] Improve README.md
+- [ ] Add wiki pages
+- [ ] Re-enable adding the contestant data into the HTML file.
+- [ ] Double check if injecting <scripts> and <iframes> is not possible
 - [ ] Setup crontab
 - [ ] Run pilot
 - [ ] Handle API failures (availability, rate limit, etc.)
+- [ ] Add current week badge
+- [ ] Add E2E tests to contest page
