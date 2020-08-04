@@ -7,8 +7,8 @@
 - [x] Deploy winning PR to production
 - [x] Clean-up csscontest.com styles and others
 - [x] Check cache policies on website
-- [ ] Improve README.md
-- [ ] Add wiki pages
+- [x] Improve README.md
+- [x] Add wiki pages
 - [ ] Re-enable adding the contestant data into the HTML file.
 - [ ] Double check if injecting <scripts> and <iframes> is not possible
 - [ ] Setup crontab
