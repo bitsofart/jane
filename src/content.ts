@@ -63,3 +63,7 @@ It will be merged and deployed to [csscontest.com](https://csscontest.com) soon.
 
 Thank you very much for your participation!
 `
+export const pullRequestInvalidAcknowledge = `Notice: this Pull Request is not a valid contest entry.
+
+For more information on how submissions work, check this document: [CSS Submission wiki](https://github.com/bitsofart/contest/wiki/CSS-Submission)
+`
