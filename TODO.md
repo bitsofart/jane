@@ -9,7 +9,8 @@
 - [x] Check cache policies on website
 - [x] Improve README.md
 - [x] Add wiki pages
-- [ ] Re-enable adding the contestant data into the HTML file.
+- [ ] Re-enable adding the contestant data into the HTML file. (Almost there. There seems to be something wrong on the
+      last template compilation)
 - [ ] Double check if injecting <scripts> and <iframes> is not possible
 - [ ] Setup crontab
 - [ ] Run pilot

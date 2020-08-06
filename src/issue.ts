@@ -178,7 +178,8 @@ export async function closeIssuesForPeriod(
 
 async function selectWinner(date: moment.Moment = moment()): Promise<void> {
   try {
-    const period = getContestPeriod(date)
+    // For issues we always look one week ahead
+    const period = getContestPeriod(date.add(1, 'w'))
     const issues = await getIssues(period.fullLabel, excludePullRequest)
     const mostVotedIssue = await getMostVoted(issues)
     Promise.all([

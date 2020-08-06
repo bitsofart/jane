@@ -12,11 +12,13 @@ import {
   pullRequestWinnerCommit,
   pullRequetsWinnerComment,
   invalidPullRequest,
+  pullRequestInvalidAcknowledge,
 } from './content'
 import { PullRequestWebhookActions, GithubFileWithContent, GithubFile, Issue, ContestPeriod } from './types'
 import { getReactions } from './reactions'
 import { deployPullRequestPreview } from './deploy'
 import { getIssues, getMostVoted, closeIssuesForPeriod } from './issue'
+import { prepareContentFile } from './template'
 
 async function getFileRawContent(rawContentUrl: string): Promise<string> {
   const { data } = await axios.get(rawContentUrl)
@@ -37,7 +39,8 @@ async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[], st
   const nextHtml = await getNextIndexHtml()
   const prHtml = files.filter(({ filename }) => filename === 'index.html')[0]
   if (!prHtml) {
-    throw new Error('Something went wrong while trying to read HTML content...')
+    gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestInvalidAcknowledge })
+    throw new Error('Missing HTML content change.')
   }
   const [nextHtmlContent, prHtmlContent] = [
     await getFileRawContent(nextHtml.download_url),
@@ -54,7 +57,7 @@ async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[], st
 
 async function invalidatePullRequest(prNumber: number) {
   const gh = getGhClient()
-  gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestClosedDueToChanges })
+  await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestClosedDueToChanges })
 }
 
 async function getNextIndexHtml(): Promise<GithubFileWithContent> {
@@ -68,30 +71,35 @@ async function verifyAndDeploy(
   action: PullRequestWebhookActions,
   payload: Webhooks.WebhookPayloadPullRequest,
 ): Promise<void> {
-  if (!['opened', 'edited', 'synchronize'].includes(action)) {
-    throw new Error(`Not supported webhook action: ${action}`)
-  }
+  try {
+    if (!['opened', 'edited', 'synchronize'].includes(action)) {
+      throw new Error(`Not supported webhook action: ${action}`)
+    }
 
-  if (!payload) {
-    throw new Error('Missing webhook payload.')
-  }
+    if (!payload) {
+      throw new Error('Missing webhook payload.')
+    }
 
-  const reactions = await getReactions(prNumber)
-  if (action === 'synchronize' && reactions.length) {
-    return await invalidatePullRequest(prNumber)
+    const reactions = await getReactions(prNumber)
+    if (action === 'synchronize' && reactions.length) {
+      return await invalidatePullRequest(prNumber)
+    }
+    const [areFilesValid, files, error] = await verifyFiles(prNumber)
+    const gh = getGhClient()
+    if (!areFilesValid) {
+      await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: invalidPullRequest(error) })
+      return
+    }
+    await assingPullRequestToCurrentWeek(prNumber)
+    const deployUrl = await deployPullRequestPreview(prNumber, files, {
+      url: payload.pull_request.user.html_url,
+      handle: payload.pull_request.user.login,
+    })
+    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
+  } catch (error) {
+    // Add some sort of notification
+    console.error({ error })
   }
-  const [areFilesValid, files, error] = await verifyFiles(prNumber)
-  const gh = getGhClient()
-  if (!areFilesValid) {
-    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: invalidPullRequest(error) })
-    return
-  }
-  await assingPullRequestToCurrentWeek(prNumber)
-  const deployUrl = await deployPullRequestPreview(prNumber, files, {
-    url: payload.pull_request.user.html_url,
-    handle: payload.pull_request.user.login,
-  })
-  await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
 }
 
 async function assingPullRequestToCurrentWeek(prNumber: number): Promise<void> {
@@ -107,10 +115,17 @@ function excludeIssues(issue: Issue): boolean {
   return !!issue.pull_request
 }
 
-async function updateProduction(contestPeriod: ContestPeriod): Promise<void> {
+async function updateProduction(
+  contestPeriod: ContestPeriod,
+  styleCreatorLogin: string,
+  styleCreatorUrl: string,
+): Promise<void> {
   const gh = getGhClient()
   const ref = 'heads/master'
-  const { data: indexFile } = await gh.repos.getContent({ owner, repo, path: 'index.html' })
+  const indexFileContent = await prepareContentFile({
+    style_creator_url: styleCreatorUrl,
+    style_creator_handle: styleCreatorLogin,
+  })
   const { data: cssFile } = await gh.repos.getContent({ owner, repo, path: 'styles.css' })
   const {
     data: {
@@ -130,7 +145,7 @@ async function updateProduction(contestPeriod: ContestPeriod): Promise<void> {
         path: 'index.html',
         mode: '100644',
         type: 'blob',
-        content: Buffer.from(indexFile.content, 'base64').toString('utf8'),
+        content: indexFileContent,
       },
       {
         path: 'styles.css',
@@ -154,9 +169,14 @@ async function updateProduction(contestPeriod: ContestPeriod): Promise<void> {
   await gh.git.updateRef({ owner, repo: productionRepo, ref, sha: newCommitSha })
 }
 
-async function makeWinner(prNumber: number, period: ContestPeriod): Promise<void> {
+async function makeWinner(prNumber: number, period: ContestPeriod): Promise<[string, string]> {
   const gh = getGhClient()
   const { PULL_REQUEST_WINNER: winningPrLabel } = config
+  const {
+    data: {
+      user: { login, html_url: loginUrl },
+    },
+  } = await gh.pulls.get({ owner, repo, pull_number: prNumber })
   await gh.issues.addLabels({ owner, repo, issue_number: prNumber, labels: [winningPrLabel] })
   await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequetsWinnerComment })
   await gh.pulls.merge({
@@ -165,6 +185,7 @@ async function makeWinner(prNumber: number, period: ContestPeriod): Promise<void
     pull_number: prNumber,
     commit_title: pullRequestWinnerCommit(period.fullLabel),
   })
+  return [login, loginUrl]
 }
 
 async function selectWinner(date = moment()) {
@@ -172,9 +193,9 @@ async function selectWinner(date = moment()) {
   try {
     const prs = await getIssues(period.fullLabel, excludeIssues)
     const mostVotedPr = await getMostVoted(prs)
-    await makeWinner(mostVotedPr.number, period)
+    const [winnerLogin, winnerUrl] = await makeWinner(mostVotedPr.number, period)
     await closeIssuesForPeriod(period, excludeIssues, closingPRComment)
-    await updateProduction(period)
+    await updateProduction(period, winnerUrl, winnerLogin)
   } catch (error) {
     console.error(`Something happened and I can not select a winner for ${period.fullLabel}.`, { error })
   }
