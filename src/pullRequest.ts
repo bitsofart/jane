@@ -122,10 +122,13 @@ async function updateProduction(
 ): Promise<void> {
   const gh = getGhClient()
   const ref = 'heads/master'
-  const indexFileContent = await prepareContentFile({
-    style_creator_url: styleCreatorUrl,
-    style_creator_handle: styleCreatorLogin,
-  })
+  const indexFileContent = await prepareContentFile(
+    {
+      style_creator_url: styleCreatorUrl,
+      style_creator_handle: styleCreatorLogin,
+    },
+    'index.html',
+  )
   const { data: cssFile } = await gh.repos.getContent({ owner, repo, path: 'styles.css' })
   const {
     data: {
