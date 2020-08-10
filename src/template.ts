@@ -1,4 +1,5 @@
 import Handlebars from 'handlebars'
+import cheerio from 'cheerio'
 import { getGhClient } from './gh'
 import { config, owner, repo } from './config'
 
@@ -24,6 +25,11 @@ export async function buildContent(
   opts: ContentOptions,
   base64Encoded = true,
 ): Promise<string> {
+  Handlebars.registerHelper('sanitize', (context) => {
+    const $ = cheerio.load(context, { xmlMode: true })
+    $('script').remove()
+    return new Handlebars.SafeString($.html())
+  })
   const template = base64Encoded ? Buffer.from(templateContent, 'base64').toString('utf-8') : templateContent
   const build = Handlebars.compile<ContentOptions>(template)
   return build(opts)
