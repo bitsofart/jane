@@ -1,0 +1,18 @@
+"use strict";
+exports.__esModule = true;
+exports.vercel_project_id = exports.owner = exports.productionRepo = exports.repo = exports.config = void 0;
+exports.config = {
+    ISSUE_CYCLE: '1w',
+    ISSUE_LABEL: 'Next content',
+    PULL_REQUEST_LABEL: 'Entry submission',
+    OWNER: 'bitsofart',
+    POSITIVE_REACTIONS: ['THUMBS_UP', 'LAUGH', 'HOORAY', 'HEART', 'ROCKET'],
+    REPOSITORY: 'contest',
+    WINNER_LABEL: 'Selected',
+    PULL_REQUEST_WINNER: 'Winner',
+    HTML_TEMPLATE_PATH: 'template.hbs'
+};
+exports.repo = 'contest' || process.env.JANE_REPO_NAME;
+exports.productionRepo = 'csscontest.com' || process.env.JANE_PRODUCTION_REPO_NAME;
+exports.owner = 'bitsofart' || process.env.JANE_REPO_OWNER;
+exports.vercel_project_id = 'bitsofart' || process.env.VERCEL_PROJECT_ID;

@@ -3,6 +3,7 @@
    "compilerOptions": {
      "noImplicitAny" : true,
      "allowSyntheticDefaultImports": true,
+     "declaration": true,
      "downlevelIteration": true,
      "module": "CommonJS",
      "esModuleInterop": true,
