@@ -260,9 +260,11 @@ function markAsWinnerIssue(issue, period) {
                         })];
                 case 1:
                     _b.sent();
+                    console.log("Added label to #" + issue.number + ".");
                     return [4 /*yield*/, commitWinningIssue(issue, period)];
                 case 2:
                     _a = _b.sent(), commitSha = _a.sha, commitUrl = _a.url;
+                    console.log("Content commited.");
                     return [4 /*yield*/, gh.issues.createComment({
                             owner: config_1.owner,
                             repo: config_1.repo,
@@ -271,6 +273,7 @@ function markAsWinnerIssue(issue, period) {
                         })];
                 case 3:
                     _b.sent();
+                    console.log("Comment added.");
                     return [2 /*return*/, issue];
             }
         });
@@ -315,7 +318,7 @@ function selectWinner(date) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
+                    _a.trys.push([0, 4, , 5]);
                     period = contest_1.getContestPeriod(date.add(1, 'w'));
                     return [4 /*yield*/, getIssues(period.fullLabel, excludePullRequest)];
                 case 1:
@@ -323,16 +326,18 @@ function selectWinner(date) {
                     return [4 /*yield*/, getMostVoted(issues_1)];
                 case 2:
                     mostVotedIssue = _a.sent();
-                    Promise.all([
-                        markAsWinnerIssue(mostVotedIssue, period),
-                        closeIssuesForPeriod(period, excludePullRequest, content_1.closingIssueComment),
-                    ]);
-                    return [3 /*break*/, 4];
+                    return [4 /*yield*/, Promise.all([
+                            markAsWinnerIssue(mostVotedIssue, period),
+                            closeIssuesForPeriod(period, excludePullRequest, content_1.closingIssueComment),
+                        ])];
                 case 3:
+                    _a.sent();
+                    return [3 /*break*/, 5];
+                case 4:
                     error_2 = _a.sent();
                     console.error('I am sorry but I was unable to select a winner due to the error bellow:\n', error_2);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 5];
+                case 5: return [2 /*return*/];
             }
         });
     });

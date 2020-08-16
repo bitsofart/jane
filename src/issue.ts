@@ -151,13 +151,16 @@ async function markAsWinnerIssue(issue: Issue, period: ContestPeriod): Promise<I
     issue_number: issue.number,
     labels: [winnerLabel],
   })
+  console.log(`Added label to #${issue.number}.`)
   const { sha: commitSha, url: commitUrl } = await commitWinningIssue(issue, period)
+  console.log(`Content commited.`)
   await gh.issues.createComment({
     owner,
     repo,
     issue_number: issue.number,
     body: issueSelected(commitSha, commitUrl),
   })
+  console.log(`Comment added.`)
   return issue
 }
 
@@ -182,7 +185,7 @@ async function selectWinner(date: moment.Moment = moment()): Promise<void> {
     const period = getContestPeriod(date.add(1, 'w'))
     const issues = await getIssues(period.fullLabel, excludePullRequest)
     const mostVotedIssue = await getMostVoted(issues)
-    Promise.all([
+    await Promise.all([
       markAsWinnerIssue(mostVotedIssue, period),
       closeIssuesForPeriod(period, excludePullRequest, closingIssueComment),
     ])
