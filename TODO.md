@@ -12,7 +12,9 @@
 - [x] Re-enable adding the contestant data into the HTML file. (Almost there. There seems to be something wrong on the
       last template compilation)
 - [x] Double check if injecting <scripts> and <iframes> is not possible
-- [ ] Setup crontab
+- [x] Check Jane's TS declaration file
+- [x] Call bot from webhooks
+- [x] Setup cron
 - [ ] Run pilot
 - [ ] Handle API failures (availability, rate limit, etc.)
 - [ ] Add current week badge
