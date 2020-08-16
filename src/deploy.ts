@@ -4,9 +4,10 @@ import { vercel_project_id } from './config'
 import { buildContent } from './template'
 import { PRAuthor, GithubFile } from './types'
 
+// @TODO: Move those to config
 const fileUploadEndpoint = 'https://api.vercel.com/v2/now/files'
 const deployEndpoint = 'https://api.vercel.com/v12/now/deployments?forceNew=1'
-const vercelToken = process.env.VERCEL_TOKEN
+const deployToken = process.env.DEPLOY_TOKEN
 
 async function uploadFile(file: GithubFile, author: PRAuthor): Promise<[string, string, number]> {
   const fileUrl = file.raw_url
@@ -23,7 +24,7 @@ async function uploadFile(file: GithubFile, author: PRAuthor): Promise<[string, 
     url: fileUploadEndpoint,
     method: 'post',
     headers: {
-      Authorization: `BEARER ${vercelToken}`,
+      Authorization: `BEARER ${deployToken}`,
       'Content-Length': fileSize,
       'x-now-digest': fileSha1,
     },
@@ -37,7 +38,7 @@ async function triggerDeployment(files: Array<[string, string, number]>) {
     url: deployEndpoint,
     method: 'post',
     headers: {
-      Authorization: `BEARER ${vercelToken}`,
+      Authorization: `BEARER ${deployToken}`,
       'Content-Type': 'application/json',
     },
     data: {
