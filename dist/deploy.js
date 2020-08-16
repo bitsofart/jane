@@ -44,9 +44,10 @@ var axios_1 = __importDefault(require("axios"));
 var crypto_1 = __importDefault(require("crypto"));
 var config_1 = require("./config");
 var template_1 = require("./template");
+// @TODO: Move those to config
 var fileUploadEndpoint = 'https://api.vercel.com/v2/now/files';
 var deployEndpoint = 'https://api.vercel.com/v12/now/deployments?forceNew=1';
-var vercelToken = process.env.VERCEL_TOKEN;
+var deployToken = process.env.DEPLOY_TOKEN;
 function uploadFile(file, author) {
     return __awaiter(this, void 0, void 0, function () {
         var fileUrl, fileName, rawContent, fileContent, _a, fileSha1, fileSize;
@@ -75,7 +76,7 @@ function uploadFile(file, author) {
                             url: fileUploadEndpoint,
                             method: 'post',
                             headers: {
-                                Authorization: "BEARER " + vercelToken,
+                                Authorization: "BEARER " + deployToken,
                                 'Content-Length': fileSize,
                                 'x-now-digest': fileSha1
                             },
@@ -95,7 +96,7 @@ function triggerDeployment(files) {
                     url: deployEndpoint,
                     method: 'post',
                     headers: {
-                        Authorization: "BEARER " + vercelToken,
+                        Authorization: "BEARER " + deployToken,
                         'Content-Type': 'application/json'
                     },
                     data: {
