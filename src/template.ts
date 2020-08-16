@@ -28,6 +28,7 @@ export async function buildContent(
   Handlebars.registerHelper('sanitize', (context) => {
     const $ = cheerio.load(context, { xmlMode: true })
     $('script').remove()
+    $('iframe').remove()
     return new Handlebars.SafeString($.html())
   })
   const template = base64Encoded ? Buffer.from(templateContent, 'base64').toString('utf-8') : templateContent
