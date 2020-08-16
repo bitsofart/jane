@@ -52,6 +52,7 @@ function buildContent(templateContent, opts, base64Encoded) {
             handlebars_1["default"].registerHelper('sanitize', function (context) {
                 var $ = cheerio_1["default"].load(context, { xmlMode: true });
                 $('script').remove();
+                $('iframe').remove();
                 return new handlebars_1["default"].SafeString($.html());
             });
             template = base64Encoded ? Buffer.from(templateContent, 'base64').toString('utf-8') : templateContent;
