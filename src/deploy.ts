@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, {AxiosResponse} from 'axios'
 import crypto from 'crypto'
 import { vercel_project_id } from './config'
 import { buildContent } from './template'
@@ -33,7 +33,7 @@ async function uploadFile(file: GithubFile, author: PRAuthor): Promise<[string, 
   return [fileName, fileSha1, fileSize]
 }
 
-async function triggerDeployment(files: Array<[string, string, number]>) {
+async function triggerDeployment(files: Array<[string, string, number]>): Promise<AxiosResponse> {
   return axios.request({
     url: deployEndpoint,
     method: 'post',
@@ -64,16 +64,19 @@ export async function deployPullRequestPreview(
     console.log(`Gathering files for deploying ${prNumber}`)
     const filesSha = await Promise.all(files.map((file) => uploadFile(file, author)))
     console.log(`Triggering deploy ${prNumber}`)
-    const {
-      data: { url: deployUrl },
-    } = await triggerDeployment(filesSha)
-    return deployUrl
+    const response = await triggerDeployment(filesSha)
+    if (response.status >= 400) {
+      throw new Error(`Deploy Error: ${response.status} ${response.statusText}`)
+    }
+    const deployUrl = response.data?.url;
+    return deployUrl || ''
   } catch (error) {
     console.error(`Something went wrong while trying to deploy PR#${prNumber}.\n`)
     if (error.response) {
       console.error(`status: ${error.response.status}\n`)
       console.error(`status-text: ${error.response.statusText}\n`)
       console.error(`data: ${JSON.stringify(error.response.data)}.`)
+      throw new Error(error)
     } else {
       console.error(error)
     }
