@@ -15,6 +15,7 @@
 - [x] Check Jane's TS declaration file
 - [x] Call bot from webhooks
 - [x] Setup cron
+- [x] Double-check why deploy is empty
 - [ ] Run pilot
 - [ ] Handle API failures (availability, rate limit, etc.)
 - [ ] Add current week badge
