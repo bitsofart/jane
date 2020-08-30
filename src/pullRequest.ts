@@ -71,35 +71,30 @@ async function verifyAndDeploy(
   action: PullRequestWebhookActions,
   payload: Webhooks.WebhookPayloadPullRequest,
 ): Promise<void> {
-  try {
-    if (!['opened', 'edited', 'synchronize'].includes(action)) {
-      throw new Error(`Not supported webhook action: ${action}`)
-    }
-
-    if (!payload) {
-      throw new Error('Missing webhook payload.')
-    }
-
-    const reactions = await getReactions(prNumber)
-    if (action === 'synchronize' && reactions.length) {
-      return await invalidatePullRequest(prNumber)
-    }
-    const [areFilesValid, files, error] = await verifyFiles(prNumber)
-    const gh = getGhClient()
-    if (!areFilesValid) {
-      await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: invalidPullRequest(error) })
-      return
-    }
-    await assingPullRequestToCurrentWeek(prNumber)
-    const deployUrl = await deployPullRequestPreview(prNumber, files, {
-      url: payload.pull_request.user.html_url,
-      handle: payload.pull_request.user.login,
-    })
-    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
-  } catch (error) {
-    // Add some sort of notification
-    console.error({ error })
+  if (!['opened', 'edited', 'synchronize'].includes(action)) {
+    throw new Error(`Not supported webhook action: ${action}`)
   }
+
+  if (!payload) {
+    throw new Error('Missing webhook payload.')
+  }
+
+  const reactions = await getReactions(prNumber)
+  if (action === 'synchronize' && reactions.length) {
+    return await invalidatePullRequest(prNumber)
+  }
+  const [areFilesValid, files, error] = await verifyFiles(prNumber)
+  const gh = getGhClient()
+  if (!areFilesValid) {
+    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: invalidPullRequest(error) })
+    return
+  }
+  await assingPullRequestToCurrentWeek(prNumber)
+  const deployUrl = await deployPullRequestPreview(prNumber, files, {
+    url: payload.pull_request.user.html_url,
+    handle: payload.pull_request.user.login,
+  })
+  await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: previewDeployed(deployUrl) })
 }
 
 async function assingPullRequestToCurrentWeek(prNumber: number): Promise<void> {
@@ -193,15 +188,11 @@ async function makeWinner(prNumber: number, period: ContestPeriod): Promise<[str
 
 async function selectWinner(date = moment()) {
   const period = getContestPeriod(date)
-  try {
-    const prs = await getIssues(period.fullLabel, excludeIssues)
-    const mostVotedPr = await getMostVoted(prs)
-    const [winnerLogin, winnerUrl] = await makeWinner(mostVotedPr.number, period)
-    await closeIssuesForPeriod(period, excludeIssues, closingPRComment)
-    await updateProduction(period, winnerUrl, winnerLogin)
-  } catch (error) {
-    console.error(`Something happened and I can not select a winner for ${period.fullLabel}.`, { error })
-  }
+  const prs = await getIssues(period.fullLabel, excludeIssues)
+  const mostVotedPr = await getMostVoted(prs)
+  const [winnerLogin, winnerUrl] = await makeWinner(mostVotedPr.number, period)
+  await closeIssuesForPeriod(period, excludeIssues, closingPRComment)
+  await updateProduction(period, winnerLogin, winnerUrl)
 }
 
 export type PullRequestHandlers = {

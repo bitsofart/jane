@@ -39,25 +39,19 @@ async function invalidateIssue(issueNumber: number, payload: IssueWebhookPayload
 }
 
 async function verify(issueNumber: number, action: IssueWebhookActions, payload: IssueWebhookPayload): Promise<void> {
-  try {
-    const gh = getGhClient()
-    const {
-      data: { labels },
-    } = await gh.issues.get({ owner, repo, issue_number: issueNumber })
-    if (action === 'edited' && containsLabel(config.ISSUE_LABEL, labels)) {
-      return await invalidateIssue(issueNumber, payload)
-    }
-
-    if (action === 'opened') {
-      return await assignIssueForNextWeeksContest(issueNumber)
-    }
-
-    console.log(`Nothing to do in issue #${issueNumber}`)
-  } catch (error) {
-    console.error(`Sorry, but it wasn't possible to verify issue #${issueNumber} due to the following error:\n`, {
-      error,
-    })
+  const gh = getGhClient()
+  const {
+    data: { labels },
+  } = await gh.issues.get({ owner, repo, issue_number: issueNumber })
+  if (action === 'edited' && containsLabel(config.ISSUE_LABEL, labels)) {
+    return await invalidateIssue(issueNumber, payload)
   }
+
+  if (action === 'opened') {
+    return await assignIssueForNextWeeksContest(issueNumber)
+  }
+
+  console.log(`Nothing to do in issue #${issueNumber}`)
 }
 
 export async function getIssues(labelName: string, issueFilter: (issue: Issue) => boolean): Promise<Issue[]> {
@@ -180,18 +174,13 @@ export async function closeIssuesForPeriod(
 }
 
 async function selectWinner(date: moment.Moment = moment()): Promise<void> {
-  try {
-    // For issues we always look one week ahead
-    const period = getContestPeriod(date.add(1, 'w'))
-    const issues = await getIssues(period.fullLabel, excludePullRequest)
-    const mostVotedIssue = await getMostVoted(issues)
-    await Promise.all([
-      markAsWinnerIssue(mostVotedIssue, period),
-      closeIssuesForPeriod(period, excludePullRequest, closingIssueComment),
-    ])
-  } catch (error) {
-    console.error('I am sorry but I was unable to select a winner due to the error bellow:\n', error)
-  }
+  const period = getContestPeriod(date.add(1, 'w'))
+  const issues = await getIssues(period.fullLabel, excludePullRequest)
+  const mostVotedIssue = await getMostVoted(issues)
+  await Promise.all([
+    markAsWinnerIssue(mostVotedIssue, period),
+    closeIssuesForPeriod(period, excludePullRequest, closingIssueComment),
+  ])
 }
 
 export type IssuesHandlers = {

@@ -60,25 +60,13 @@ export async function deployPullRequestPreview(
   files: Array<GithubFile>,
   author: PRAuthor,
 ): Promise<string> {
-  try {
-    console.log(`Gathering files for deploying ${prNumber}`)
-    const filesSha = await Promise.all(files.map((file) => uploadFile(file, author)))
-    console.log(`Triggering deploy ${prNumber}`)
-    const response = await triggerDeployment(filesSha)
-    if (response.status >= 400) {
-      throw new Error(`Deploy Error: ${response.status} ${response.statusText}`)
-    }
-    const deployUrl = response.data?.url;
-    return deployUrl || ''
-  } catch (error) {
-    console.error(`Something went wrong while trying to deploy PR#${prNumber}.\n`)
-    if (error.response) {
-      console.error(`status: ${error.response.status}\n`)
-      console.error(`status-text: ${error.response.statusText}\n`)
-      console.error(`data: ${JSON.stringify(error.response.data)}.`)
-      throw new Error(error)
-    } else {
-      console.error(error)
-    }
+  console.log(`Gathering files for deploying ${prNumber}`)
+  const filesSha = await Promise.all(files.map((file) => uploadFile(file, author)))
+  console.log(`Triggering deploy ${prNumber}`)
+  const response = await triggerDeployment(filesSha)
+  if (response.status >= 400) {
+    throw new Error(`Deploy Error: ${response.status} ${response.statusText}`)
   }
+  const deployUrl = response.data?.url;
+  return deployUrl || ''
 }
