@@ -117,11 +117,10 @@ function triggerDeployment(files) {
 function deployPullRequestPreview(prNumber, files, author) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var filesSha, response, deployUrl, error_1;
+        var filesSha, response, deployUrl;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
                     console.log("Gathering files for deploying " + prNumber);
                     return [4 /*yield*/, Promise.all(files.map(function (file) { return uploadFile(file, author); }))];
                 case 1:
@@ -135,20 +134,6 @@ function deployPullRequestPreview(prNumber, files, author) {
                     }
                     deployUrl = (_a = response.data) === null || _a === void 0 ? void 0 : _a.url;
                     return [2 /*return*/, deployUrl || ''];
-                case 3:
-                    error_1 = _b.sent();
-                    console.error("Something went wrong while trying to deploy PR#" + prNumber + ".\n");
-                    if (error_1.response) {
-                        console.error("status: " + error_1.response.status + "\n");
-                        console.error("status-text: " + error_1.response.statusText + "\n");
-                        console.error("data: " + JSON.stringify(error_1.response.data) + ".");
-                        throw new Error(error_1);
-                    }
-                    else {
-                        console.error(error_1);
-                    }
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
             }
         });
     });

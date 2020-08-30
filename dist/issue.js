@@ -98,11 +98,10 @@ function invalidateIssue(issueNumber, payload) {
 }
 function verify(issueNumber, action, payload) {
     return __awaiter(this, void 0, void 0, function () {
-        var gh, labels, error_1;
+        var gh, labels;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 6, , 7]);
                     gh = gh_1.getGhClient();
                     return [4 /*yield*/, gh.issues.get({ owner: config_1.owner, repo: config_1.repo, issue_number: issueNumber })];
                 case 1:
@@ -116,14 +115,7 @@ function verify(issueNumber, action, payload) {
                 case 4: return [2 /*return*/, _a.sent()];
                 case 5:
                     console.log("Nothing to do in issue #" + issueNumber);
-                    return [3 /*break*/, 7];
-                case 6:
-                    error_1 = _a.sent();
-                    console.error("Sorry, but it wasn't possible to verify issue #" + issueNumber + " due to the following error:\n", {
-                        error: error_1
-                    });
-                    return [3 /*break*/, 7];
-                case 7: return [2 /*return*/];
+                    return [2 /*return*/];
             }
         });
     });
@@ -314,16 +306,15 @@ exports.closeIssuesForPeriod = closeIssuesForPeriod;
 function selectWinner(date) {
     if (date === void 0) { date = moment_1["default"](); }
     return __awaiter(this, void 0, void 0, function () {
-        var period, issues_1, mostVotedIssue, error_2;
+        var period, issues, mostVotedIssue;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 4, , 5]);
                     period = contest_1.getContestPeriod(date.add(1, 'w'));
                     return [4 /*yield*/, getIssues(period.fullLabel, excludePullRequest)];
                 case 1:
-                    issues_1 = _a.sent();
-                    return [4 /*yield*/, getMostVoted(issues_1)];
+                    issues = _a.sent();
+                    return [4 /*yield*/, getMostVoted(issues)];
                 case 2:
                     mostVotedIssue = _a.sent();
                     return [4 /*yield*/, Promise.all([
@@ -332,12 +323,7 @@ function selectWinner(date) {
                         ])];
                 case 3:
                     _a.sent();
-                    return [3 /*break*/, 5];
-                case 4:
-                    error_2 = _a.sent();
-                    console.error('I am sorry but I was unable to select a winner due to the error bellow:\n', error_2);
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
+                    return [2 /*return*/];
             }
         });
     });

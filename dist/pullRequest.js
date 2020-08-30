@@ -171,11 +171,10 @@ function getNextIndexHtml() {
 }
 function verifyAndDeploy(prNumber, action, payload) {
     return __awaiter(this, void 0, void 0, function () {
-        var reactions, _a, areFilesValid, files, error, gh, deployUrl, error_1;
+        var reactions, _a, areFilesValid, files, error, gh, deployUrl;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 10, , 11]);
                     if (!['opened', 'edited', 'synchronize'].includes(action)) {
                         throw new Error("Not supported webhook action: " + action);
                     }
@@ -209,13 +208,7 @@ function verifyAndDeploy(prNumber, action, payload) {
                     return [4 /*yield*/, gh.issues.createComment({ owner: config_1.owner, repo: config_1.repo, issue_number: prNumber, body: content_1.previewDeployed(deployUrl) })];
                 case 9:
                     _b.sent();
-                    return [3 /*break*/, 11];
-                case 10:
-                    error_1 = _b.sent();
-                    // Add some sort of notification
-                    console.error({ error: error_1 });
-                    return [3 /*break*/, 11];
-                case 11: return [2 /*return*/];
+                    return [2 /*return*/];
             }
         });
     });
@@ -341,35 +334,27 @@ function makeWinner(prNumber, period) {
 function selectWinner(date) {
     if (date === void 0) { date = moment_1["default"](); }
     return __awaiter(this, void 0, void 0, function () {
-        var period, prs, mostVotedPr, _a, winnerLogin, winnerUrl, error_2;
+        var period, prs, mostVotedPr, _a, winnerLogin, winnerUrl;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     period = contest_1.getContestPeriod(date);
-                    _b.label = 1;
-                case 1:
-                    _b.trys.push([1, 7, , 8]);
                     return [4 /*yield*/, issue_1.getIssues(period.fullLabel, excludeIssues)];
-                case 2:
+                case 1:
                     prs = _b.sent();
                     return [4 /*yield*/, issue_1.getMostVoted(prs)];
-                case 3:
+                case 2:
                     mostVotedPr = _b.sent();
                     return [4 /*yield*/, makeWinner(mostVotedPr.number, period)];
-                case 4:
+                case 3:
                     _a = __read.apply(void 0, [_b.sent(), 2]), winnerLogin = _a[0], winnerUrl = _a[1];
                     return [4 /*yield*/, issue_1.closeIssuesForPeriod(period, excludeIssues, content_1.closingPRComment)];
+                case 4:
+                    _b.sent();
+                    return [4 /*yield*/, updateProduction(period, winnerLogin, winnerUrl)];
                 case 5:
                     _b.sent();
-                    return [4 /*yield*/, updateProduction(period, winnerUrl, winnerLogin)];
-                case 6:
-                    _b.sent();
-                    return [3 /*break*/, 8];
-                case 7:
-                    error_2 = _b.sent();
-                    console.error("Something happened and I can not select a winner for " + period.fullLabel + ".", { error: error_2 });
-                    return [3 /*break*/, 8];
-                case 8: return [2 /*return*/];
+                    return [2 /*return*/];
             }
         });
     });
