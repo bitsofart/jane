@@ -17,6 +17,8 @@
 - [x] Setup cron
 - [x] Double-check why deploy is empty
 - [ ] Run pilot
+- [ ] Make sure Jane only checks a PR again when there are relevant changes (by using labels)
+- [ ] Fix error handling properly
 - [ ] Handle API failures (availability, rate limit, etc.)
 - [ ] Add current week badge
 - [ ] Add E2E tests to contest page
