@@ -77,6 +77,9 @@ var reactions_1 = require("./reactions");
 var deploy_1 = require("./deploy");
 var issue_1 = require("./issue");
 var template_1 = require("./template");
+function removeLineBreaks(text) {
+    return text.replace(/(\r\n|\n|\r)/gm, '');
+}
 function getFileRawContent(rawContentUrl) {
     return __awaiter(this, void 0, void 0, function () {
         var data;
@@ -114,21 +117,22 @@ function verifyFiles(prNumber) {
                         var filename = _a.filename;
                         return filename === 'index.html';
                     })[0];
-                    if (!prHtml) {
-                        gh.issues.createComment({ owner: config_1.owner, repo: config_1.repo, issue_number: prNumber, body: content_1.pullRequestInvalidAcknowledge });
-                        throw new Error('Missing HTML content change.');
-                    }
-                    return [4 /*yield*/, getFileRawContent(nextHtml.download_url)];
+                    if (!!prHtml) return [3 /*break*/, 4];
+                    return [4 /*yield*/, gh.issues.createComment({ owner: config_1.owner, repo: config_1.repo, issue_number: prNumber, body: content_1.pullRequestInvalidAcknowledge })];
                 case 3:
+                    _c.sent();
+                    throw new Error('Missing HTML content change.');
+                case 4: return [4 /*yield*/, getFileRawContent(nextHtml.download_url)];
+                case 5:
                     _b = [
                         _c.sent()
                     ];
                     return [4 /*yield*/, getFileRawContent(prHtml.raw_url)];
-                case 4:
+                case 6:
                     _a = __read.apply(void 0, [_b.concat([
                             _c.sent()
                         ]), 2]), nextHtmlContent = _a[0], prHtmlContent = _a[1];
-                    isHtmlContentCorrect = nextHtmlContent === prHtmlContent;
+                    isHtmlContentCorrect = removeLineBreaks(nextHtmlContent) === removeLineBreaks(prHtmlContent);
                     error = !areChangedFilesAllowed
                         ? 'PR contains invalid files'
                         : !isHtmlContentCorrect
