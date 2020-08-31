@@ -20,6 +20,10 @@ import { deployPullRequestPreview } from './deploy'
 import { getIssues, getMostVoted, closeIssuesForPeriod } from './issue'
 import { prepareContentFile } from './template'
 
+function removeLineBreaks(text: string): string {
+  return text.replace(/(\r\n|\n|\r)/gm, '')
+}
+
 async function getFileRawContent(rawContentUrl: string): Promise<string> {
   const { data } = await axios.get(rawContentUrl)
   return data
@@ -39,14 +43,14 @@ async function verifyFiles(prNumber: number): Promise<[boolean, GithubFile[], st
   const nextHtml = await getNextIndexHtml()
   const prHtml = files.filter(({ filename }) => filename === 'index.html')[0]
   if (!prHtml) {
-    gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestInvalidAcknowledge })
+    await gh.issues.createComment({ owner, repo, issue_number: prNumber, body: pullRequestInvalidAcknowledge })
     throw new Error('Missing HTML content change.')
   }
   const [nextHtmlContent, prHtmlContent] = [
     await getFileRawContent(nextHtml.download_url),
     await getFileRawContent(prHtml.raw_url),
   ]
-  const isHtmlContentCorrect = nextHtmlContent === prHtmlContent
+  const isHtmlContentCorrect = removeLineBreaks(nextHtmlContent) === removeLineBreaks(prHtmlContent)
   const error = !areChangedFilesAllowed
     ? 'PR contains invalid files'
     : !isHtmlContentCorrect
